@@ -13,6 +13,7 @@ const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const prisma_module_1 = require("./database/prisma.module");
 const scraper_module_1 = require("./scraper/scraper.module");
+const audio_module_1 = require("./audio/audio.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -23,6 +24,7 @@ exports.AppModule = AppModule = __decorate([
                 isGlobal: true,
             }),
             prisma_module_1.PrismaModule,
+            audio_module_1.AudioModule,
             scraper_module_1.ScraperModule,
         ],
         controllers: [app_controller_1.AppController],

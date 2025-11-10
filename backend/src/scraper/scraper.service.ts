@@ -2,11 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { PrismaService } from '../database/prisma.service';
+import * as path from 'path';
 
 interface ParsedShow {
   date: Date;
   playlistUrl: string;
   title?: string;
+  externalId: string;
 }
 
 interface ParsedTrack {
@@ -62,6 +64,10 @@ export class ScraperService {
 
         const li = $(element).closest('li');
         const contextText = li.text().replace(/\s+/g, ' ').trim();
+        const externalIdMatch = href.match(/shows\/(\d+)/);
+        if (!externalIdMatch) {
+          return;
+        }
 
         // Look for date patterns like "January 1, 2020" or "01/01/2020"
         const dateMatch = contextText.match(/(\w+\s+\d{1,2},\s+\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/);
@@ -80,6 +86,7 @@ export class ScraperService {
           date: parsedDate,
           playlistUrl: fullUrl,
           title: this.extractTitle(contextText),
+          externalId: externalIdMatch[1],
         });
       });
 
@@ -104,28 +111,45 @@ export class ScraperService {
    */
   async scrapeAndSaveShow(showInfo: ParsedShow): Promise<void> {
     this.logger.log(`Scraping show: ${showInfo.date.toISOString()}`);
-
-    try {
-      // Check if show already exists
+ 
+     try {
+       // Check if show already exists
       const existing = await this.prisma.show.findUnique({
         where: { playlistUrl: showInfo.playlistUrl },
       });
-
+ 
+       // Fetch the playlist page
+       const response = await axios.get(showInfo.playlistUrl);
+       const $ = cheerio.load(response.data);
+ 
+       // Detect audio formats available
+       const audioFormats = await this.detectAudioFormats($, showInfo);
+       const bestFormat = this.selectBestFormat(audioFormats);
+ 
+       // Parse track listing
+       const tracks = this.parseTrackListing($);
+ 
       if (existing) {
-        this.logger.log(`Show already exists: ${showInfo.date.toISOString()}`);
+        const updateData: Record<string, unknown> = {};
+        if (!existing.title && showInfo.title) {
+          updateData['title'] = showInfo.title;
+        }
+        if (!existing.archiveUrl && bestFormat?.url) {
+          updateData['archiveUrl'] = bestFormat.url;
+          updateData['audioFormat'] = bestFormat.format;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await this.prisma.show.update({
+            where: { id: existing.id },
+            data: updateData,
+          });
+          this.logger.log(`Updated existing show ${existing.id} with archive URL`);
+        } else {
+          this.logger.log(`Show already exists with archive: ${existing.id}`);
+        }
         return;
       }
-
-      // Fetch the playlist page
-      const response = await axios.get(showInfo.playlistUrl);
-      const $ = cheerio.load(response.data);
-
-      // Detect audio formats available
-      const audioFormats = this.detectAudioFormats($);
-      const bestFormat = this.selectBestFormat(audioFormats);
-
-      // Parse track listing
-      const tracks = this.parseTrackListing($);
 
       // Save show to database
       const show = await this.prisma.show.create({
@@ -157,71 +181,165 @@ export class ScraperService {
   /**
    * Detect available audio formats from the page
    */
-  private detectAudioFormats($: cheerio.CheerioAPI): AudioFormat[] {
+  private async detectAudioFormats(
+    $: cheerio.CheerioAPI,
+    showInfo: ParsedShow,
+  ): Promise<AudioFormat[]> {
     const formats: AudioFormat[] = [];
+    const seen = new Set<string>();
+
+    const addFormat = (format: AudioFormat) => {
+      if (!seen.has(format.url)) {
+        formats.push(format);
+        seen.add(format.url);
+      }
+    };
 
     // Look for common audio link patterns
-    // MP3 links
+    $('a[href$=".ogg"]').each((_, element) => {
+      const href = $(element).attr('href');
+      if (href) {
+        const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
+        addFormat({ format: 'ogg', url: fullUrl });
+      }
+    });
+
+    $('a[href$=".m4a"], a[href$=".aac"]').each((_, element) => {
+      const href = $(element).attr('href');
+      if (href) {
+        const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
+        addFormat({ format: 'aac', url: fullUrl });
+      }
+    });
+
     $('a[href$=".mp3"], a[href*=".mp3?"]').each((_, element) => {
       const href = $(element).attr('href');
       if (href) {
         const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
         const quality = this.extractQuality(href);
-        formats.push({ format: 'mp3', url: fullUrl, quality });
+        addFormat({ format: 'mp3', url: fullUrl, quality });
       }
     });
 
-    // RealAudio links
-    $('a[href$=".ra"], a[href$=".rm"], a[href*="realaudio"]').each((_, element) => {
-      const href = $(element).attr('href');
-      if (href) {
-        const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-        formats.push({ format: 'ra', url: fullUrl });
-      }
-    });
-
-    // OGG links
-    $('a[href$=".ogg"]').each((_, element) => {
-      const href = $(element).attr('href');
-      if (href) {
-        const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-        formats.push({ format: 'ogg', url: fullUrl });
-      }
-    });
-
-    // AAC/M4A links
-    $('a[href$=".m4a"], a[href$=".aac"]').each((_, element) => {
-      const href = $(element).attr('href');
-      if (href) {
-        const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-        formats.push({ format: 'aac', url: fullUrl });
-      }
-    });
-
-    // Check for streaming links in text or specific elements
     const pageText = $.text();
     if (pageText.includes('128k MP3')) {
       const match = pageText.match(/(https?:\/\/[^\s]+\.mp3)/);
       if (match) {
-        formats.push({ format: 'mp3', url: match[1], quality: '128k' });
+        addFormat({ format: 'mp3', url: match[1], quality: '128k' });
+      }
+    }
+
+    // Attempt to resolve archiveplayer sources when pop-up links exist
+    const archiveIds = this.extractArchiveIds($);
+    for (const archiveId of archiveIds) {
+      const archiveFormats = await this.fetchArchiveMedia(showInfo.externalId, archiveId);
+      for (const archiveFormat of archiveFormats) {
+        if (archiveFormat) {
+          addFormat(archiveFormat);
+        }
       }
     }
 
     return formats;
   }
 
+  private extractArchiveIds($: cheerio.CheerioAPI): string[] {
+    const archives = new Set<string>();
+    $('a[href*="flashplayer.php"]').each((_, element) => {
+      const href = $(element).attr('href');
+      if (!href) return;
+      try {
+        const parsed = new URL(href, this.WFMU_BASE_URL);
+        const archive = parsed.searchParams.get('archive');
+        if (archive) {
+          archives.add(archive);
+        }
+      } catch (error) {
+        // ignore malformed URLs
+      }
+    });
+    return Array.from(archives);
+  }
+
+  private async fetchArchiveMedia(
+    showExternalId: string,
+    archiveId: string,
+  ): Promise<AudioFormat[]> {
+    try {
+      const archiveUrl = `${this.WFMU_BASE_URL}/archiveplayer/?archive=${archiveId}&show=${showExternalId}`;
+      const response = await axios.get(archiveUrl);
+      const $ = cheerio.load(response.data);
+
+      const formats: AudioFormat[] = [];
+      const preferredOrder = ['ogg', 'aac', 'm4a', 'mp3', 'mp4', 'ra'];
+
+      const sources: string[] = [];
+      $('video#audio-player, audio#audio-player').each((_, element) => {
+        const src = $(element).attr('src');
+        if (src) {
+          sources.push(src);
+        }
+      });
+
+      $('source').each((_, element) => {
+        const src = $(element).attr('src');
+        if (src) {
+          sources.push(src);
+        }
+      });
+
+      const bodyAttr = $('body').attr('data-hls-url');
+      if (bodyAttr) {
+        sources.push(bodyAttr);
+      }
+
+      const seen = new Set<string>();
+      for (const src of sources) {
+        const fullUrl = src.startsWith('http') ? src : new URL(src, this.WFMU_BASE_URL).toString();
+        if (seen.has(fullUrl)) {
+          continue;
+        }
+        seen.add(fullUrl);
+        const format = this.inferFormatFromUrl(fullUrl);
+        formats.push({ format, url: fullUrl });
+      }
+
+      // Sort by preferred order
+      formats.sort((a, b) => preferredOrder.indexOf(a.format) - preferredOrder.indexOf(b.format));
+
+      return formats;
+    } catch (error) {
+      this.logger.warn(`Failed to fetch archive media for ${showExternalId}/${archiveId}: ${(error as Error).message}`);
+      return [];
+    }
+  }
+
+  private inferFormatFromUrl(url: string): string {
+    try {
+      const ext = path.extname(new URL(url).pathname).toLowerCase();
+      if (ext) {
+        return ext.replace('.', '') || 'mp3';
+      }
+    } catch (error) {
+      // ignore
+    }
+    return 'mp3';
+  }
+
   /**
-   * Select the best audio format (prefer MP3 > OGG > AAC > RealAudio)
+   * Select the best audio format (prefer OGG > AAC/M4A > MP3 > MP4 > RealAudio)
    */
   private selectBestFormat(formats: AudioFormat[]): AudioFormat | null {
     if (formats.length === 0) return null;
 
     // Priority order
     const priorities = {
-      'mp3': 10,
-      'ogg': 8,
-      'aac': 6,
-      'ra': 1,
+      'ogg': 100,
+      'aac': 90,
+      'm4a': 90,
+      'mp3': 80,
+      'mp4': 70,
+      'ra': 10,
     };
 
     // Sort by priority and quality
@@ -230,8 +348,8 @@ export class ScraperService {
       if (priorityDiff !== 0) return priorityDiff;
 
       // If same format, prefer higher quality
-      const qualityA = parseInt(a.quality || '0');
-      const qualityB = parseInt(b.quality || '0');
+      const qualityA = parseInt(a.quality || '0', 10);
+      const qualityB = parseInt(b.quality || '0', 10);
       return qualityB - qualityA;
     });
 

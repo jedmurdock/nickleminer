@@ -51,6 +51,7 @@ const common_1 = require("@nestjs/common");
 const axios_1 = __importDefault(require("axios"));
 const cheerio = __importStar(require("cheerio"));
 const prisma_service_1 = require("../database/prisma.service");
+const path = __importStar(require("path"));
 let ScraperService = ScraperService_1 = class ScraperService {
     prisma;
     logger = new common_1.Logger(ScraperService_1.name);
@@ -75,6 +76,10 @@ let ScraperService = ScraperService_1 = class ScraperService {
                 }
                 const li = $(element).closest('li');
                 const contextText = li.text().replace(/\s+/g, ' ').trim();
+                const externalIdMatch = href.match(/shows\/(\d+)/);
+                if (!externalIdMatch) {
+                    return;
+                }
                 const dateMatch = contextText.match(/(\w+\s+\d{1,2},\s+\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/);
                 if (!dateMatch) {
                     return;
@@ -88,6 +93,7 @@ let ScraperService = ScraperService_1 = class ScraperService {
                     date: parsedDate,
                     playlistUrl: fullUrl,
                     title: this.extractTitle(contextText),
+                    externalId: externalIdMatch[1],
                 });
             });
             this.logger.log(`Found ${shows.length} shows for ${year}`);
@@ -108,15 +114,32 @@ let ScraperService = ScraperService_1 = class ScraperService {
             const existing = await this.prisma.show.findUnique({
                 where: { playlistUrl: showInfo.playlistUrl },
             });
-            if (existing) {
-                this.logger.log(`Show already exists: ${showInfo.date.toISOString()}`);
-                return;
-            }
             const response = await axios_1.default.get(showInfo.playlistUrl);
             const $ = cheerio.load(response.data);
-            const audioFormats = this.detectAudioFormats($);
+            const audioFormats = await this.detectAudioFormats($, showInfo);
             const bestFormat = this.selectBestFormat(audioFormats);
             const tracks = this.parseTrackListing($);
+            if (existing) {
+                const updateData = {};
+                if (!existing.title && showInfo.title) {
+                    updateData['title'] = showInfo.title;
+                }
+                if (!existing.archiveUrl && bestFormat?.url) {
+                    updateData['archiveUrl'] = bestFormat.url;
+                    updateData['audioFormat'] = bestFormat.format;
+                }
+                if (Object.keys(updateData).length > 0) {
+                    await this.prisma.show.update({
+                        where: { id: existing.id },
+                        data: updateData,
+                    });
+                    this.logger.log(`Updated existing show ${existing.id} with archive URL`);
+                }
+                else {
+                    this.logger.log(`Show already exists with archive: ${existing.id}`);
+                }
+                return;
+            }
             const show = await this.prisma.show.create({
                 data: {
                     date: showInfo.date,
@@ -137,61 +160,143 @@ let ScraperService = ScraperService_1 = class ScraperService {
             throw error;
         }
     }
-    detectAudioFormats($) {
+    async detectAudioFormats($, showInfo) {
         const formats = [];
-        $('a[href$=".mp3"], a[href*=".mp3?"]').each((_, element) => {
-            const href = $(element).attr('href');
-            if (href) {
-                const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-                const quality = this.extractQuality(href);
-                formats.push({ format: 'mp3', url: fullUrl, quality });
+        const seen = new Set();
+        const addFormat = (format) => {
+            if (!seen.has(format.url)) {
+                formats.push(format);
+                seen.add(format.url);
             }
-        });
-        $('a[href$=".ra"], a[href$=".rm"], a[href*="realaudio"]').each((_, element) => {
-            const href = $(element).attr('href');
-            if (href) {
-                const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-                formats.push({ format: 'ra', url: fullUrl });
-            }
-        });
+        };
         $('a[href$=".ogg"]').each((_, element) => {
             const href = $(element).attr('href');
             if (href) {
                 const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-                formats.push({ format: 'ogg', url: fullUrl });
+                addFormat({ format: 'ogg', url: fullUrl });
             }
         });
         $('a[href$=".m4a"], a[href$=".aac"]').each((_, element) => {
             const href = $(element).attr('href');
             if (href) {
                 const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-                formats.push({ format: 'aac', url: fullUrl });
+                addFormat({ format: 'aac', url: fullUrl });
+            }
+        });
+        $('a[href$=".mp3"], a[href*=".mp3?"]').each((_, element) => {
+            const href = $(element).attr('href');
+            if (href) {
+                const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
+                const quality = this.extractQuality(href);
+                addFormat({ format: 'mp3', url: fullUrl, quality });
             }
         });
         const pageText = $.text();
         if (pageText.includes('128k MP3')) {
             const match = pageText.match(/(https?:\/\/[^\s]+\.mp3)/);
             if (match) {
-                formats.push({ format: 'mp3', url: match[1], quality: '128k' });
+                addFormat({ format: 'mp3', url: match[1], quality: '128k' });
+            }
+        }
+        const archiveIds = this.extractArchiveIds($);
+        for (const archiveId of archiveIds) {
+            const archiveFormats = await this.fetchArchiveMedia(showInfo.externalId, archiveId);
+            for (const archiveFormat of archiveFormats) {
+                if (archiveFormat) {
+                    addFormat(archiveFormat);
+                }
             }
         }
         return formats;
+    }
+    extractArchiveIds($) {
+        const archives = new Set();
+        $('a[href*="flashplayer.php"]').each((_, element) => {
+            const href = $(element).attr('href');
+            if (!href)
+                return;
+            try {
+                const parsed = new URL(href, this.WFMU_BASE_URL);
+                const archive = parsed.searchParams.get('archive');
+                if (archive) {
+                    archives.add(archive);
+                }
+            }
+            catch (error) {
+            }
+        });
+        return Array.from(archives);
+    }
+    async fetchArchiveMedia(showExternalId, archiveId) {
+        try {
+            const archiveUrl = `${this.WFMU_BASE_URL}/archiveplayer/?archive=${archiveId}&show=${showExternalId}`;
+            const response = await axios_1.default.get(archiveUrl);
+            const $ = cheerio.load(response.data);
+            const formats = [];
+            const preferredOrder = ['ogg', 'aac', 'm4a', 'mp3', 'mp4', 'ra'];
+            const sources = [];
+            $('video#audio-player, audio#audio-player').each((_, element) => {
+                const src = $(element).attr('src');
+                if (src) {
+                    sources.push(src);
+                }
+            });
+            $('source').each((_, element) => {
+                const src = $(element).attr('src');
+                if (src) {
+                    sources.push(src);
+                }
+            });
+            const bodyAttr = $('body').attr('data-hls-url');
+            if (bodyAttr) {
+                sources.push(bodyAttr);
+            }
+            const seen = new Set();
+            for (const src of sources) {
+                const fullUrl = src.startsWith('http') ? src : new URL(src, this.WFMU_BASE_URL).toString();
+                if (seen.has(fullUrl)) {
+                    continue;
+                }
+                seen.add(fullUrl);
+                const format = this.inferFormatFromUrl(fullUrl);
+                formats.push({ format, url: fullUrl });
+            }
+            formats.sort((a, b) => preferredOrder.indexOf(a.format) - preferredOrder.indexOf(b.format));
+            return formats;
+        }
+        catch (error) {
+            this.logger.warn(`Failed to fetch archive media for ${showExternalId}/${archiveId}: ${error.message}`);
+            return [];
+        }
+    }
+    inferFormatFromUrl(url) {
+        try {
+            const ext = path.extname(new URL(url).pathname).toLowerCase();
+            if (ext) {
+                return ext.replace('.', '') || 'mp3';
+            }
+        }
+        catch (error) {
+        }
+        return 'mp3';
     }
     selectBestFormat(formats) {
         if (formats.length === 0)
             return null;
         const priorities = {
-            'mp3': 10,
-            'ogg': 8,
-            'aac': 6,
-            'ra': 1,
+            'ogg': 100,
+            'aac': 90,
+            'm4a': 90,
+            'mp3': 80,
+            'mp4': 70,
+            'ra': 10,
         };
         formats.sort((a, b) => {
             const priorityDiff = (priorities[b.format] || 0) - (priorities[a.format] || 0);
             if (priorityDiff !== 0)
                 return priorityDiff;
-            const qualityA = parseInt(a.quality || '0');
-            const qualityB = parseInt(b.quality || '0');
+            const qualityA = parseInt(a.quality || '0', 10);
+            const qualityB = parseInt(b.quality || '0', 10);
             return qualityB - qualityA;
         });
         return formats[0];

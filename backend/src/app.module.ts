@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './database/prisma.module';
 import { ScraperModule } from './scraper/scraper.module';
+import { AudioModule } from './audio/audio.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { ScraperModule } from './scraper/scraper.module';
       isGlobal: true,
     }),
     PrismaModule,
+    AudioModule,
     ScraperModule,
   ],
   controllers: [AppController],

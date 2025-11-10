@@ -76,3 +76,5 @@ docker-data/
 *.bak
 backup.sql
 
+/.next/
+/frontend/.next/trace

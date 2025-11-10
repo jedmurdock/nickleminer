@@ -18,6 +18,11 @@ model Show {
   archiveUrl  String?   @map("archive_url")
   audioFormat String?   @map("audio_format") // mp3, ra, ogg, etc.
   audioPath   String?   @map("audio_path") // Path to OGG file
+  rawAudioPath   String?   @map("raw_audio_path")
+  rawAudioFormat String?   @map("raw_audio_format")
+  downloadedAt   DateTime? @map("downloaded_at")
+  convertedAt    DateTime? @map("converted_at")
+  processingState String?  @map("processing_state")
   duration    Int?      // Duration in seconds
   processed   Boolean   @default(false)
   tracks      Track[]

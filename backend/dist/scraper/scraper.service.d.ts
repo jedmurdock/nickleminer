@@ -3,6 +3,7 @@ interface ParsedShow {
     date: Date;
     playlistUrl: string;
     title?: string;
+    externalId: string;
 }
 export declare class ScraperService {
     private prisma;
@@ -13,6 +14,9 @@ export declare class ScraperService {
     scrapeYear(year: number): Promise<void>;
     scrapeAndSaveShow(showInfo: ParsedShow): Promise<void>;
     private detectAudioFormats;
+    private extractArchiveIds;
+    private fetchArchiveMedia;
+    private inferFormatFromUrl;
     private selectBestFormat;
     private extractQuality;
     private parseTrackListing;
@@ -33,6 +37,11 @@ export declare class ScraperService {
         archiveUrl: string | null;
         audioFormat: string | null;
         audioPath: string | null;
+        rawAudioPath: string | null;
+        rawAudioFormat: string | null;
+        downloadedAt: Date | null;
+        convertedAt: Date | null;
+        processingState: string | null;
         duration: number | null;
         processed: boolean;
         createdAt: Date;
@@ -59,6 +68,11 @@ export declare class ScraperService {
         archiveUrl: string | null;
         audioFormat: string | null;
         audioPath: string | null;
+        rawAudioPath: string | null;
+        rawAudioFormat: string | null;
+        downloadedAt: Date | null;
+        convertedAt: Date | null;
+        processingState: string | null;
         duration: number | null;
         processed: boolean;
         createdAt: Date;

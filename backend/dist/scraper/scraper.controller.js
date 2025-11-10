@@ -15,10 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScraperController = void 0;
 const common_1 = require("@nestjs/common");
 const scraper_service_1 = require("./scraper.service");
+const audio_service_1 = require("../audio/audio.service");
 let ScraperController = class ScraperController {
     scraperService;
-    constructor(scraperService) {
+    audioService;
+    constructor(scraperService, audioService) {
         this.scraperService = scraperService;
+        this.audioService = audioService;
     }
     async scrapeYear(year) {
         const targetYear = year || 2020;
@@ -37,6 +40,13 @@ let ScraperController = class ScraperController {
     }
     async getShow(id) {
         return this.scraperService.getShow(id);
+    }
+    async processShow(id) {
+        const result = await this.audioService.processShow(id);
+        return {
+            message: 'Audio processing complete',
+            ...result,
+        };
     }
 };
 exports.ScraperController = ScraperController;
@@ -60,8 +70,16 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], ScraperController.prototype, "getShow", null);
+__decorate([
+    (0, common_1.Post)('shows/:id/process'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ScraperController.prototype, "processShow", null);
 exports.ScraperController = ScraperController = __decorate([
     (0, common_1.Controller)('scraper'),
-    __metadata("design:paramtypes", [scraper_service_1.ScraperService])
+    __metadata("design:paramtypes", [scraper_service_1.ScraperService,
+        audio_service_1.AudioService])
 ], ScraperController);
 //# sourceMappingURL=scraper.controller.js.map
