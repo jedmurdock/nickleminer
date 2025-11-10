@@ -65,25 +65,30 @@ let ScraperService = ScraperService_1 = class ScraperService {
             const response = await axios_1.default.get(this.PLAYLIST_INDEX_URL);
             const $ = cheerio.load(response.data);
             const shows = [];
-            $('a[href*="/playlists/shows/ND"]').each((_, element) => {
+            $('a[href*="/playlists/shows/"]').each((_, element) => {
                 const href = $(element).attr('href');
                 if (!href)
                     return;
-                const linkText = $(element).text().trim();
-                const parentText = $(element).parent().text().trim();
-                const dateMatch = parentText.match(/(\w+\s+\d{1,2},\s+\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/);
-                if (dateMatch) {
-                    const dateStr = dateMatch[0];
-                    const parsedDate = new Date(dateStr);
-                    if (parsedDate.getFullYear() === year) {
-                        const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-                        shows.push({
-                            date: parsedDate,
-                            playlistUrl: fullUrl,
-                            title: this.extractTitle(parentText),
-                        });
-                    }
+                const linkText = $(element).text().toLowerCase();
+                if (!linkText.includes('see the playlist') && !linkText.includes('find the show')) {
+                    return;
                 }
+                const li = $(element).closest('li');
+                const contextText = li.text().replace(/\s+/g, ' ').trim();
+                const dateMatch = contextText.match(/(\w+\s+\d{1,2},\s+\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/);
+                if (!dateMatch) {
+                    return;
+                }
+                const parsedDate = new Date(dateMatch[0]);
+                if (Number.isNaN(parsedDate.getTime()) || parsedDate.getFullYear() !== year) {
+                    return;
+                }
+                const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
+                shows.push({
+                    date: parsedDate,
+                    playlistUrl: fullUrl,
+                    title: this.extractTitle(contextText),
+                });
             });
             this.logger.log(`Found ${shows.length} shows for ${year}`);
             for (const show of shows) {

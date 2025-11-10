@@ -48,34 +48,39 @@ export class ScraperService {
       const shows: ParsedShow[] = [];
       
       // WFMU playlist pages typically have links like:
-      // <a href="/playlists/shows/ND">See the playlist</a>
-      // Format: /playlists/shows/ND or with date parameters
+      // <a href="/playlists/shows/123456">See the playlist</a>
+      // Format: /playlists/shows/[showId]
       
-      $('a[href*="/playlists/shows/ND"]').each((_, element) => {
+      $('a[href*="/playlists/shows/"]').each((_, element) => {
         const href = $(element).attr('href');
         if (!href) return;
 
-        // Extract date from the context (usually in the same line or parent)
-        const linkText = $(element).text().trim();
-        const parentText = $(element).parent().text().trim();
-        
-        // Look for date patterns like "January 1, 2020" or "01/01/2020"
-        const dateMatch = parentText.match(/(\w+\s+\d{1,2},\s+\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/);
-        
-        if (dateMatch) {
-          const dateStr = dateMatch[0];
-          const parsedDate = new Date(dateStr);
-          
-          // Filter for the requested year
-          if (parsedDate.getFullYear() === year) {
-            const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
-            shows.push({
-              date: parsedDate,
-              playlistUrl: fullUrl,
-              title: this.extractTitle(parentText),
-            });
-          }
+        const linkText = $(element).text().toLowerCase();
+        if (!linkText.includes('see the playlist') && !linkText.includes('find the show')) {
+          return;
         }
+
+        const li = $(element).closest('li');
+        const contextText = li.text().replace(/\s+/g, ' ').trim();
+
+        // Look for date patterns like "January 1, 2020" or "01/01/2020"
+        const dateMatch = contextText.match(/(\w+\s+\d{1,2},\s+\d{4})|(\d{1,2}\/\d{1,2}\/\d{4})/);
+
+        if (!dateMatch) {
+          return;
+        }
+
+        const parsedDate = new Date(dateMatch[0]);
+        if (Number.isNaN(parsedDate.getTime()) || parsedDate.getFullYear() !== year) {
+          return;
+        }
+
+        const fullUrl = href.startsWith('http') ? href : `${this.WFMU_BASE_URL}${href}`;
+        shows.push({
+          date: parsedDate,
+          playlistUrl: fullUrl,
+          title: this.extractTitle(contextText),
+        });
       });
 
       this.logger.log(`Found ${shows.length} shows for ${year}`);
