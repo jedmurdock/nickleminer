@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Show {
+  id          String    @id @default(uuid())
+  date        DateTime
+  title       String?
+  playlistUrl String    @unique @map("playlist_url")
+  archiveUrl  String?   @map("archive_url")
+  audioFormat String?   @map("audio_format") // mp3, ra, ogg, etc.
+  audioPath   String?   @map("audio_path") // Path to OGG file
+  duration    Int?      // Duration in seconds
+  processed   Boolean   @default(false)
+  tracks      Track[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([date])
+  @@index([processed])
+  @@map("shows")
+}
+
+model Track {
+  id        String   @id @default(uuid())
+  showId    String   @map("show_id")
+  show      Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  position  Int      // Order in playlist
+  artist    String
+  title     String
+  album     String?
+  label     String?
+  year      Int?
+  comments  String?  // Any additional info from HTML
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([showId])
+  @@index([artist])
+  @@index([title])
+  @@map("tracks")
+}
+
