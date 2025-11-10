@@ -11,7 +11,7 @@
 
 #### Project Structure
 - [x] Monorepo setup with npm workspaces
-- [x] Docker Compose infrastructure (PostgreSQL, Redis, MinIO)
+- [x] Rancher Desktop + Docker Compose infrastructure (PostgreSQL, Redis, MinIO)
 - [x] Git repository initialized
 - [x] Comprehensive documentation created
 
@@ -87,9 +87,9 @@
 
 ### What You Can Do Right Now:
 
-1. **Start the infrastructure**:
+1. **Start the infrastructure** (launch Rancher Desktop with `dockerd` first):
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 2. **Run database migrations**:
@@ -214,8 +214,8 @@
 - ✅ Nest.js 11
 - ✅ TypeScript 5
 - ✅ Prisma 6
-- ✅ PostgreSQL (Docker)
-- ✅ Redis (Docker)
+- ✅ PostgreSQL (containerized via Docker CLI from Rancher Desktop)
+- ✅ Redis (containerized via Docker CLI from Rancher Desktop)
 - ✅ Axios (HTTP client)
 - ✅ Cheerio (HTML parsing)
 - ✅ BullMQ (added to package.json)
@@ -228,7 +228,7 @@
 - ✅ Axios (added to package.json)
 
 ### Infrastructure
-- ✅ Docker Compose
+- ✅ Rancher Desktop (dockerd runtime + Docker Compose)
 - ✅ PostgreSQL 15
 - ✅ Redis 7
 - ✅ MinIO (S3-compatible storage)
@@ -298,7 +298,7 @@ cd ../frontend && npm install
 
 ### 2. Start infrastructure:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 3. Set up database:
@@ -342,7 +342,7 @@ curl http://localhost:3001/scraper/shows | jq
 - ✅ Rate limiting and respectful scraping
 - ✅ TypeScript decorators (Nest.js)
 - ✅ Dependency injection pattern
-- ✅ Docker Compose setup
+- ✅ Rancher Desktop + Docker Compose setup
 - ✅ PostgreSQL database design
 - ✅ REST API design
 - ✅ Monorepo structure

@@ -423,13 +423,14 @@ NEXT_PUBLIC_API_URL="http://localhost:3001"
 
 ### Development
 ```bash
-docker-compose up -d  # Start PostgreSQL, Redis, MinIO
+# Start PostgreSQL, Redis, MinIO (requires Rancher Desktop with dockerd runtime)
+docker compose up -d
 cd backend && npm run start:dev
 cd frontend && npm run dev
 ```
 
 ### Production (Future)
-- Docker containers for all services
+- Containerized services (compatible with Rancher Desktop / Docker)
 - Kubernetes for orchestration
 - CI/CD pipeline (GitHub Actions)
 - Environment-specific configs

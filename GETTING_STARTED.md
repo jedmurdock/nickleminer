@@ -19,12 +19,12 @@ Before you begin, ensure you have the following installed:
    npm install -g pnpm
    ```
 
-3. **Docker & Docker Compose** (for databases)
+3. **Rancher Desktop** (provides Docker-compatible CLI)
    ```bash
    docker --version
-   docker-compose --version
+   docker compose version
    ```
-   Install from: https://www.docker.com/
+   Install from: https://rancherdesktop.io/ (select the **dockerd** runtime in settings)
 
 4. **FFmpeg** (for audio processing)
    ```bash
@@ -67,7 +67,7 @@ cd /Users/jedmurdock/cursor/nickleminer
 ls -la
 ```
 
-### Step 2: Set Up Infrastructure (Docker)
+### Step 2: Set Up Infrastructure (Rancher Desktop + Docker CLI)
 
 Create a `docker-compose.yml` file to run PostgreSQL, Redis, and MinIO:
 
@@ -75,10 +75,10 @@ Create a `docker-compose.yml` file to run PostgreSQL, Redis, and MinIO:
 # This will be created in the next step
 ```
 
-Start the infrastructure:
+Make sure Rancher Desktop is running with the `dockerd` runtime, then start the infrastructure:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 Verify containers are running:
@@ -167,7 +167,7 @@ nickleminer/
 **Option 1: Manual**
 ```bash
 # Terminal 1: Infrastructure
-docker-compose up
+docker compose up
 
 # Terminal 2: Backend
 cd backend && npm run start:dev
@@ -186,8 +186,8 @@ npm run dev  # Starts both frontend and backend
 ```bash
 # Stop apps (Ctrl+C in terminals)
 
-# Stop Docker containers
-docker-compose down
+# Stop containers
+docker compose down
 ```
 
 ---
@@ -282,7 +282,7 @@ docker ps | grep postgres
 docker logs nickleminer-postgres
 
 # Try restarting
-docker-compose restart postgres
+docker compose restart postgres
 ```
 
 #### 2. "FFmpeg not found"
@@ -493,11 +493,11 @@ npm run type-check       # TypeScript checks
 
 ### Docker Commands
 ```bash
-docker-compose up -d           # Start all services
-docker-compose down            # Stop all services
-docker-compose logs -f         # View logs
-docker-compose restart postgres # Restart specific service
-docker-compose ps              # List running containers
+docker compose up -d           # Start all services
+docker compose down            # Stop all services
+docker compose logs -f         # View logs
+docker compose restart postgres # Restart specific service
+docker compose ps              # List running containers
 ```
 
 ---

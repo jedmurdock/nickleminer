@@ -18,7 +18,7 @@ I've completed comprehensive planning and implementation of the foundation for y
 
 ### ✅ Project Infrastructure
 - Monorepo structure with npm workspaces
-- Docker Compose with PostgreSQL, Redis, and MinIO
+- Rancher Desktop (dockerd runtime) orchestrating PostgreSQL, Redis, and MinIO via Docker Compose
 - Proper .gitignore and storage directories
 - Environment variable templates
 
@@ -65,7 +65,7 @@ I've completed comprehensive planning and implementation of the foundation for y
 {
   "@nestjs/common": "^11.0.1",
   "@nestjs/core": "^11.0.1",
-  "@nestjs/config": "^3.3.0",
+  "@nestjs/config": "^4.0.0",
   "@prisma/client": "^6.2.0",
   "axios": "^1.7.9",
   "cheerio": "^1.0.0",
@@ -103,11 +103,13 @@ cd frontend
 npm install
 ```
 
-### 2. Start Docker Services
+### 2. Start Container Services (Rancher Desktop)
+
+Launch Rancher Desktop and confirm the **dockerd** runtime is active, then:
 
 ```bash
 cd /Users/jedmurdock/cursor/nickleminer
-docker-compose up -d
+docker compose up -d
 ```
 
 Wait ~10 seconds for services to start. Verify with:
@@ -323,7 +325,7 @@ GET http://localhost:3001/scraper/shows/:id
 ### Daily Workflow:
 ```bash
 # Start infrastructure (if not running)
-docker-compose up -d
+docker compose up -d
 
 # Start backend
 cd backend && npm run start:dev
@@ -350,9 +352,9 @@ npm run prisma:migrate
 
 ### If Things Break:
 ```bash
-# Restart Docker
-docker-compose down
-docker-compose up -d
+# Restart containers (Rancher Desktop)
+docker compose down
+docker compose up -d
 
 # Reinstall dependencies
 rm -rf node_modules backend/node_modules frontend/node_modules
@@ -385,7 +387,7 @@ npm run prisma:migrate reset
 - `frontend/.env.local` - Configuration (create this)
 
 **Infrastructure**:
-- `docker-compose.yml` - Database services
+- `docker-compose.yml` - Compose file consumed by Rancher Desktop / Docker CLI
 - `storage/` - Audio file storage (empty now)
 
 ---
@@ -514,7 +516,7 @@ npm run prisma:migrate reset
 ## ✅ Success Checklist
 
 Before moving to Phase 3, verify:
-- [x] Docker containers running
+- [x] Rancher Desktop containers running
 - [x] Backend starts without errors
 - [x] Can scrape shows successfully
 - [x] Shows appear in database
@@ -539,7 +541,7 @@ Before moving to Phase 3, verify:
 ### Common Commands:
 ```bash
 # Start everything
-docker-compose up -d
+docker compose up -d
 cd backend && npm run start:dev
 cd frontend && npm run dev
 
@@ -547,11 +549,11 @@ cd frontend && npm run dev
 cd backend && npm run prisma:studio
 
 # Check logs
-docker-compose logs -f
+docker compose logs -f
 cd backend && tail -f logs/app.log
 
 # Stop everything
-docker-compose down
+docker compose down
 pkill -f "nest start"
 pkill -f "next dev"
 ```

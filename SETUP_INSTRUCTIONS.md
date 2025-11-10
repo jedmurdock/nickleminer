@@ -7,7 +7,7 @@ Follow these steps to get NickleMiner up and running on your machine.
 Before starting, ensure you have:
 - [x] Node.js 18+ installed (`node --version`)
 - [x] npm installed (`npm --version`)
-- [x] Docker & Docker Compose installed (`docker --version`)
+- [x] Rancher Desktop running with the **dockerd** runtime (`docker --version`, `docker compose version`)
 - [x] FFmpeg installed (`ffmpeg -version`)
   - macOS: `brew install ffmpeg`
   - Ubuntu: `sudo apt install ffmpeg`
@@ -33,11 +33,13 @@ cd frontend
 npm install
 ```
 
-## 🐳 Step 2: Start Docker Services
+## 🐳 Step 2: Start Containers (via Rancher Desktop)
+
+Launch Rancher Desktop, confirm the **dockerd (moby)** runtime is selected, then:
 
 ```bash
 # From project root
-docker-compose up -d
+docker compose up -d
 ```
 
 This starts:
@@ -141,7 +143,7 @@ npm run dev
 docker logs nickleminer-postgres
 
 # Restart if needed
-docker-compose restart postgres
+docker compose restart postgres
 ```
 
 ### "Module not found" errors
@@ -222,23 +224,16 @@ nickleminer/
 # View database in GUI
 cd backend && npm run prisma:studio
 
-# Check Docker logs
-docker-compose logs -f
+# Check container logs (via Rancher Desktop)
+docker compose logs -f
 
 # Stop all services
-docker-compose down
+docker compose down
 pkill -f "nest start"
 pkill -f "next dev"
 
 # Clean restart
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 cd backend && npm run prisma:migrate
 ```
-
-## 🎉 Success!
-
-If you can see both the frontend and backend running without errors, you're ready to start building features!
-
-Next: Implement the WFMU scraper service to fetch 2020 shows.
-

@@ -308,7 +308,7 @@ Core only, or include some Nice-to-Have features?
 ### Do you already have these installed?
 
 - [ ] Node.js 18+ (`node --version`)
-- [ ] Docker & Docker Compose (`docker --version`)
+- [ ] Rancher Desktop with dockerd runtime (`docker --version`, `docker compose version`)
 - [ ] FFmpeg (`ffmpeg -version`)
 - [ ] PostgreSQL client (optional, for inspection)
 - [ ] Git (`git --version`)
@@ -418,7 +418,7 @@ Once you've made these decisions:
 
 1. I'll set up the project structure
 2. Initialize backend and frontend
-3. Set up Docker infrastructure
+3. Set up Rancher Desktop container infrastructure
 4. Implement the first feature (scraping)
 5. Build incrementally from there
 

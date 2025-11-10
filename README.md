@@ -38,7 +38,7 @@ NickleMiner scrapes over 20 years of radio archives from [WFMU's Nickel And Dime
 ### Infrastructure
 - **PostgreSQL** - Primary database
 - **Redis** - Queue management and caching
-- **Docker** - Containerization
+- **Rancher Desktop** - Local container runtime (Docker-compatible)
 - **MinIO** - S3-compatible object storage (optional)
 
 ### External APIs
@@ -61,7 +61,7 @@ NickleMiner scrapes over 20 years of radio archives from [WFMU's Nickel And Dime
 ### Prerequisites
 
 - Node.js 18+
-- Docker & Docker Compose
+- Rancher Desktop (provides the Docker-compatible CLI)
 - FFmpeg
 - Git
 
@@ -74,9 +74,11 @@ NickleMiner scrapes over 20 years of radio archives from [WFMU's Nickel And Dime
    ```
 
 2. **Start infrastructure**
-   ```bash
-   docker-compose up -d
-   ```
+   - Launch Rancher Desktop (ensure the `dockerd` runtime is selected)
+   - Then run:
+     ```bash
+     docker compose up -d
+     ```
 
 3. **Set up backend**
    ```bash

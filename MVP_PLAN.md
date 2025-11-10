@@ -22,7 +22,7 @@ Based on discussions, we're building a focused MVP that:
 ### Tasks:
 - [x] Project planning and documentation
 - [ ] Initialize monorepo structure
-- [ ] Set up Docker infrastructure (PostgreSQL, Redis)
+- [ ] Set up Rancher Desktop infrastructure (PostgreSQL, Redis)
 - [ ] Initialize backend (Nest.js)
 - [ ] Initialize frontend (Next.js)
 - [ ] Set up Prisma with simplified schema
@@ -323,7 +323,7 @@ interface TrackListProps {
 
 ### Week 1: Foundation
 ```bash
-Day 1-2: Set up monorepo, Docker, Prisma
+Day 1-2: Set up monorepo, Rancher Desktop (dockerd), Prisma
 Day 3-4: Create basic Nest.js modules
 Day 5-7: Create basic Next.js pages (mock data)
 ```
@@ -448,7 +448,7 @@ This project touches on:
 - [x] **State Management** - Client-side caching
 
 ### DevOps:
-- [x] **Docker** - Containerization
+- [x] **Rancher Desktop** - Docker-compatible container runtime
 - [x] **PostgreSQL** - Relational database
 - [x] **Redis** - Queue management
 - [x] **Monorepo** - npm workspaces
@@ -479,7 +479,7 @@ MVP is complete when:
 1. Initialize backend with Nest.js CLI
 2. Set up Prisma with simplified schema
 3. Initialize frontend with create-next-app
-4. Set up Docker containers
+4. Launch Rancher Desktop and start containers
 5. Create first scraper endpoint
 6. Test with one 2020 show
 

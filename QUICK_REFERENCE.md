@@ -14,8 +14,8 @@ npm install
 cd backend && npm install
 cd ../frontend && npm install
 
-# Start infrastructure
-docker-compose up -d
+# Start infrastructure (ensure Rancher Desktop with dockerd runtime is running)
+docker compose up -d
 
 # Set up database
 cd backend
@@ -33,8 +33,8 @@ npm run prisma:migrate  # Enter "init" when prompted
 
 ### Daily Development
 ```bash
-# Start Docker (if not running)
-docker-compose up -d
+# Ensure Rancher Desktop is running, then
+docker compose up -d
 
 # Start backend
 cd backend && npm run start:dev
@@ -43,12 +43,12 @@ cd backend && npm run start:dev
 cd frontend && npm run dev
 ```
 
-### Docker Management
+### Container Management (Rancher Desktop + Docker CLI)
 ```bash
-docker-compose up -d          # Start databases
-docker-compose down           # Stop databases
-docker-compose logs -f        # View logs
-docker-compose restart postgres  # Restart specific service
+docker compose up -d          # Start databases
+docker compose down           # Stop databases
+docker compose logs -f        # View logs
+docker compose restart postgres  # Restart specific service
 docker ps                     # List running containers
 ```
 
@@ -260,14 +260,14 @@ npm run prisma:studio
 docker ps | grep postgres
 
 # Restart PostgreSQL
-docker-compose restart postgres
+docker compose restart postgres
 
 # View logs
 docker logs nickleminer-postgres
 
 # If still broken, recreate
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 ```
 
 ### "Module not found" errors
@@ -383,7 +383,7 @@ GROUP BY audio_format;
 ## 🧪 Testing Checklist
 
 ### Currently Testable:
-- [x] Start Docker containers
+- [x] Start Rancher Desktop containers
 - [x] Run database migrations
 - [x] Start backend server
 - [x] Scrape 2020 shows
@@ -450,11 +450,11 @@ GROUP BY audio_format;
 ## 🆘 Quick Help
 
 ### Something not working?
-1. Check Docker: `docker ps`
+1. Check containers (Rancher Desktop): `docker ps`
 2. Check logs: `cd backend && npm run start:dev` (watch output)
 3. Check database: `cd backend && npm run prisma:studio`
 4. Check .env file exists and is correct
-5. Try restarting: `docker-compose restart`
+5. Try restarting: `docker compose restart`
 
 ### Where to find things?
 - **Backend code**: `backend/src/`

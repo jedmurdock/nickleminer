@@ -547,7 +547,7 @@ To get started quickly, focus on:
 ## Next Steps
 
 1. **Review this plan** - Any questions or adjustments?
-2. **Set up development environment** - Node.js, Docker, FFmpeg
+2. **Set up development environment** - Node.js, Rancher Desktop (dockerd), FFmpeg
 3. **Initialize project structure** - Create monorepo with backend/frontend
 4. **Start with Sprint 1** - Database and basic architecture
 
