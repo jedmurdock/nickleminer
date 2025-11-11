@@ -63,6 +63,12 @@ let AudioConvertService = AudioConvertService_1 = class AudioConvertService {
         this.convertedDir = path.join(this.storageRoot, 'converted');
         this.ffmpegBinary = this.configService.get('FFMPEG_PATH') ?? 'ffmpeg';
     }
+    getStorageRoot() {
+        return this.storageRoot;
+    }
+    getDefaultFormat() {
+        return 'ogg';
+    }
     async convert(showId, inputPath) {
         await this.ensureDirectories();
         const outputPath = path.join(this.convertedDir, `${showId}.ogg`);

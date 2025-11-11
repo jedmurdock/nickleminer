@@ -12,6 +12,7 @@ export declare class AudioDownloadService {
     private readonly storageRoot;
     private readonly rawDir;
     constructor(configService: ConfigService);
+    getStorageRoot(): string;
     download(show: Show): Promise<DownloadResult>;
     private ensureDirectories;
     private fileExists;

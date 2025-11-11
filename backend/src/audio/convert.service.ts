@@ -26,6 +26,14 @@ export class AudioConvertService {
     this.ffmpegBinary = this.configService.get<string>('FFMPEG_PATH') ?? 'ffmpeg';
   }
 
+  getStorageRoot(): string {
+    return this.storageRoot;
+  }
+
+  getDefaultFormat(): string {
+    return 'ogg';
+  }
+
   async convert(showId: string, inputPath: string): Promise<ConvertResult> {
     await this.ensureDirectories();
 

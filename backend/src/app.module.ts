@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './database/prisma.module';
 import { ScraperModule } from './scraper/scraper.module';
 import { AudioModule } from './audio/audio.module';
+import { ShowsModule } from './shows/shows.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AudioModule } from './audio/audio.module';
     PrismaModule,
     AudioModule,
     ScraperModule,
+    ShowsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -19,7 +19,7 @@ exports.AudioModule = AudioModule;
 exports.AudioModule = AudioModule = __decorate([
     (0, common_1.Module)({
         imports: [config_1.ConfigModule, prisma_module_1.PrismaModule],
-        providers: [audio_service_1.AudioService, download_service_1.AudioDownloadService, convert_service_1.AudioConvertService],
+        providers: [config_1.ConfigService, audio_service_1.AudioService, download_service_1.AudioDownloadService, convert_service_1.AudioConvertService],
         exports: [audio_service_1.AudioService],
     })
 ], AudioModule);

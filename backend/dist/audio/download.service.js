@@ -66,6 +66,9 @@ let AudioDownloadService = AudioDownloadService_1 = class AudioDownloadService {
         this.storageRoot = path.resolve(process.cwd(), configuredPath);
         this.rawDir = path.join(this.storageRoot, 'raw');
     }
+    getStorageRoot() {
+        return this.storageRoot;
+    }
     async download(show) {
         if (!show.archiveUrl) {
             throw new Error('Cannot download audio without an archive URL');

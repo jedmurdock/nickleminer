@@ -27,6 +27,10 @@ export class AudioDownloadService {
     this.rawDir = path.join(this.storageRoot, 'raw');
   }
 
+  getStorageRoot(): string {
+    return this.storageRoot;
+  }
+
   async download(show: Show): Promise<DownloadResult> {
     if (!show.archiveUrl) {
       throw new Error('Cannot download audio without an archive URL');

@@ -12,6 +12,8 @@ export declare class AudioConvertService {
     private readonly convertedDir;
     private readonly ffmpegBinary;
     constructor(configService: ConfigService);
+    getStorageRoot(): string;
+    getDefaultFormat(): string;
     convert(showId: string, inputPath: string): Promise<ConvertResult>;
     private ensureDirectories;
     private fileExists;
