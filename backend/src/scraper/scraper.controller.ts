@@ -1,6 +1,8 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
 import { ScraperService } from './scraper.service';
 import { AudioService } from '../audio/audio.service';
+import { ScrapeYearDto } from './dto/scrape-year.dto';
+import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 
 @Controller('scraper')
 export class ScraperController {
@@ -10,22 +12,33 @@ export class ScraperController {
   ) {}
 
   @Post('scrape-year')
-  async scrapeYear(@Body('year') year: number) {
-    // Default to 2020 if not provided
-    const targetYear = year || 2020;
-    await this.scraperService.scrapeYear(targetYear);
+  async scrapeYear(@Body() dto: ScrapeYearDto) {
+    await this.scraperService.scrapeYear(dto.year);
     return {
-      message: `Started scraping year ${targetYear}`,
-      year: targetYear,
+      message: `Started scraping year ${dto.year}`,
+      year: dto.year,
     };
   }
 
   @Get('shows')
-  async getAllShows() {
-    const shows = await this.scraperService.getAllShows();
+  async getAllShows(@Query() pagination: PaginationDto): Promise<PaginatedResponse<any>> {
+    const page = pagination.page || 1;
+    const limit = pagination.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const [shows, total] = await Promise.all([
+      this.scraperService.getAllShows(skip, limit),
+      this.scraperService.getShowsCount(),
+    ]);
+
     return {
-      count: shows.length,
-      shows,
+      data: shows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 

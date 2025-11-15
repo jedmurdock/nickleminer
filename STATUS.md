@@ -1,7 +1,7 @@
 # Project Status
 
-**Last Updated:** November 10, 2025  
-**Current Phase:** MVP Foundation Complete ✅
+**Last Updated:** January 27, 2025  
+**Current Phase:** MVP Core Features Complete ✅
 
 ---
 
@@ -30,6 +30,7 @@
 - [x] TailwindCSS for styling
 - [x] ESLint configured
 - [x] Basic layout and home page
+- [x] Admin dashboard (`/admin`)
 - [x] Environment variables setup
 
 #### Database Schema
@@ -39,17 +40,6 @@
 ✅ Relationships (Show -> Tracks one-to-many)
 ✅ Indexes on key fields
 ```
-
-#### Documentation
-- [x] README.md - Project overview
-- [x] PROJECT_PLAN.md - Comprehensive implementation plan
-- [x] ARCHITECTURE.md - Technical architecture details
-- [x] MVP_PLAN.md - Simplified MVP scope
-- [x] GETTING_STARTED.md - Development setup guide
-- [x] SETUP_INSTRUCTIONS.md - Step-by-step setup
-- [x] QUICK_REFERENCE.md - Developer cheat sheet
-- [x] DECISIONS_NEEDED.md - Planning decisions
-- [x] STATUS.md - This file
 
 ---
 
@@ -62,7 +52,7 @@
   - [x] Filter shows by year (focused on 2020)
   - [x] Parse HTML with Cheerio
   - [x] Detect available audio formats (MP3, OGG, AAC, RealAudio)
-  - [x] **Format prioritization: MP3 > OGG > AAC > RealAudio** ✨
+  - [x] **Format prioritization: OGG > AAC/M4A > MP3 > RealAudio** ✨
   - [x] Extract track listings from HTML tables/divs
   - [x] Parse track metadata (artist, title, album, label, year)
   - [x] Rate limiting (2 second delay between requests)
@@ -70,370 +60,297 @@
   
 #### API Endpoints
 - [x] `POST /scraper/scrape-year` - Trigger scraping for a specific year
-- [x] `GET /scraper/shows` - List all scraped shows
+- [x] `GET /scraper/shows` - List all scraped shows (with pagination)
 - [x] `GET /scraper/shows/:id` - Get show details with tracks
 
-#### Features Implemented
-- [x] Automatic audio format detection from page
-- [x] Quality detection (128k, 192k, 320k MP3)
-- [x] Best format selection algorithm
-- [x] Flexible track parsing (table or div-based layouts)
-- [x] Error handling and logging
-- [x] Database storage of shows and tracks
+---
+
+### ✅ Phase 3: Audio Processing (COMPLETE)
+
+#### Audio Module
+- [x] Audio download service - Downloads archives to `storage/raw`
+- [x] Audio conversion service - Converts to OGG Vorbis (`ffmpeg -q:a 6`) in `storage/converted`
+- [x] Storage management - Persists raw/converted paths, timestamps, processing state
+- [x] BullMQ job queue integration - Background processing via `POST /scraper/shows/:id/process`
+
+#### Features
+- [x] Download audio files from archive URLs
+- [x] Format conversion to OGG Vorbis
+- [x] Processing state tracking
+- [x] Skip already processed files
+
+---
+
+### ✅ Phase 4: Audio Streaming (COMPLETE)
+
+#### Streaming Module
+- [x] `GET /shows/:id/stream` - Serves converted audio with HTTP range support
+- [x] Falls back to raw archive if converted copy missing
+- [x] Proper MIME type handling
+- [x] Range request support for seeking
+
+---
+
+### ✅ Phase 5: Admin UI (COMPLETE)
+
+#### Frontend Admin Dashboard
+- [x] Admin dashboard at `/admin`
+- [x] Trigger year-based scraping
+- [x] Display show list with metadata (format, processed status, track count)
+- [x] Kick off audio conversion for each show
+- [x] Surface job status messages in UI
 
 ---
 
 ## 📊 Current Capabilities
 
-### What You Can Do Right Now:
+### ✅ What Works Right Now:
 
-1. **Start the infrastructure** (launch Rancher Desktop with `dockerd` first):
-   ```bash
-   docker compose up -d
-   ```
-
-2. **Run database migrations**:
-   ```bash
-   cd backend
-   npm run prisma:migrate
-   ```
-
-3. **Start the backend**:
-   ```bash
-   cd backend
-   npm run start:dev
-   ```
-   → Running on http://localhost:3001
-
-4. **Scrape 2020 shows**:
-   ```bash
-   curl -X POST http://localhost:3001/scraper/scrape-year \
-     -H "Content-Type: application/json" \
-     -d '{"year": 2020}'
-   ```
-
-5. **View scraped shows**:
-   ```bash
-   curl http://localhost:3001/scraper/shows
-   ```
-
-6. **Inspect database**:
-   ```bash
-   cd backend
-   npm run prisma:studio
-   ```
-   → Opens at http://localhost:5555
+1. **Scrape WFMU shows** for any year (default 2020)
+2. **View all scraped shows** via API or admin UI
+3. **See track listings** for each show
+4. **Check audio format availability** (OGG, AAC/M4A, MP3, or RealAudio)
+5. **Download and convert audio** to OGG format
+6. **Stream audio** via `/shows/:id/stream` endpoint
+7. **Admin dashboard** for managing scraping and processing
+8. **Inspect database** with Prisma Studio
 
 ---
 
-## 🚧 What's Next (In Progress)
+## ⏳ In Progress / Next Steps
 
-### Phase 3: Audio Processing
+### Phase 6: User-Facing UI (In Progress)
 
-#### To Build:
-- [ ] Audio download service
-- [ ] FFmpeg integration for format conversion
-- [ ] Convert to OGG Vorbis (quality 6 ≈ 192kbps)
-- [ ] Storage management
-- [ ] BullMQ job queue for background processing
-- [ ] Progress tracking
-
-#### Estimated Time: 1-2 days
-
----
-
-### Phase 4: Audio Streaming
-
-#### To Build:
-- [ ] Streaming endpoints with range support
-- [ ] Audio file serving
-- [ ] MIME type handling
-- [ ] Cache headers
-
-#### Estimated Time: 1 day
-
----
-
-### Phase 5: Frontend UI
-
-#### To Build:
-- [ ] Dashboard page with stats
-- [ ] Shows list page
-- [ ] Show detail page with tracklist
-- [ ] Tracks search page
-- [ ] Admin panel for scraping/processing
+- [ ] `/shows` list page
+- [ ] `/shows/[id]` detail page with embedded player
+- [ ] `/tracks` explorer with search/filter
 - [ ] Global audio player component
-- [ ] API client library
 
-#### Estimated Time: 2-3 days
+---
+
+## 🚧 Deferred (Post-MVP)
+
+- [ ] Track splitting (timestamp + silence hybrid)
+- [ ] Genre tagging (MusicBrainz/Last.fm/AcoustID)
+- [ ] Advanced search
+- [ ] Custom playlists
+- [ ] Playlist exports (M3U, JSON)
+- [ ] Expanding scraping beyond 2020
 
 ---
 
 ## 📈 Progress Tracker
 
-### Overall Progress: 40%
+### Overall Progress: ~70%
 
 | Phase | Status | Progress |
 |-------|--------|----------|
 | Foundation | ✅ Complete | 100% |
 | Web Scraping | ✅ Complete | 100% |
-| Audio Processing | ⏳ Pending | 0% |
-| Audio Streaming | ⏳ Pending | 0% |
-| Frontend UI | ⏳ Pending | 0% |
+| Audio Processing | ✅ Complete | 100% |
+| Audio Streaming | ✅ Complete | 100% |
+| Admin UI | ✅ Complete | 100% |
+| User-Facing UI | ⏳ In Progress | 30% |
 | Testing & Polish | ⏳ Pending | 0% |
 
 ---
 
-## 🎯 MVP Scope (Simplified)
+## 🚀 Quick Start
 
-**Goal:** Archive 2020 WFMU shows for personal use and learning
-
-### In Scope:
-- ✅ Scrape ~50 shows from 2020
-- ✅ Prefer higher quality audio formats
-- ⏳ Download and convert to OGG Vorbis
-- ⏳ Store full shows (no track splitting yet)
-- ✅ Store track metadata from HTML
-- ⏳ Basic UI to browse and play shows
-- ⏳ Stream audio in browser
-
-### Deferred:
-- ❌ Track splitting into individual files
-- ❌ Genre tagging
-- ❌ Advanced search
-- ❌ Custom playlists
-- ❌ Additional years (expand later)
-- ❌ Mobile app
-
----
-
-## 🛠️ Technical Stack Verification
-
-### Backend
-- ✅ Node.js 18+
-- ✅ Nest.js 11
-- ✅ TypeScript 5
-- ✅ Prisma 6
-- ✅ PostgreSQL (containerized via Docker CLI from Rancher Desktop)
-- ✅ Redis (containerized via Docker CLI from Rancher Desktop)
-- ✅ Axios (HTTP client)
-- ✅ Cheerio (HTML parsing)
-- ✅ BullMQ (added to package.json)
-
-### Frontend
-- ✅ Next.js 15
-- ✅ React 19
-- ✅ TypeScript 5
-- ✅ TailwindCSS 3
-- ✅ Axios (added to package.json)
-
-### Infrastructure
-- ✅ Rancher Desktop (dockerd runtime + Docker Compose)
-- ✅ PostgreSQL 15
-- ✅ Redis 7
-- ✅ MinIO (S3-compatible storage)
-
----
-
-## 📁 File Structure
-
-```
-nickleminer/
-├── backend/                      ✅ COMPLETE
-│   ├── src/
-│   │   ├── database/
-│   │   │   ├── prisma.module.ts  ✅
-│   │   │   └── prisma.service.ts ✅
-│   │   ├── scraper/
-│   │   │   ├── scraper.module.ts     ✅
-│   │   │   ├── scraper.service.ts    ✅
-│   │   │   └── scraper.controller.ts ✅
-│   │   ├── app.module.ts         ✅
-│   │   └── main.ts               ✅
-│   ├── prisma/
-│   │   └── schema.prisma         ✅
-│   └── package.json              ✅
-│
-├── frontend/                     ✅ BASIC SETUP
-│   ├── app/
-│   │   ├── globals.css           ✅
-│   │   ├── layout.tsx            ✅
-│   │   └── page.tsx              ✅
-│   ├── components/               📁 (empty, ready for use)
-│   ├── lib/                      📁 (empty, ready for use)
-│   └── package.json              ✅
-│
-├── storage/                      ✅ READY
-│   ├── raw/                      📁
-│   ├── converted/                📁
-│   └── tracks/                   📁
-│
-├── docker-compose.yml            ✅
-├── package.json                  ✅
-├── .gitignore                    ✅
-│
-└── docs/
-    ├── README.md                 ✅
-    ├── PROJECT_PLAN.md           ✅
-    ├── ARCHITECTURE.md           ✅
-    ├── MVP_PLAN.md               ✅
-    ├── GETTING_STARTED.md        ✅
-    ├── SETUP_INSTRUCTIONS.md     ✅
-    ├── QUICK_REFERENCE.md        ✅
-    ├── DECISIONS_NEEDED.md       ✅
-    └── STATUS.md                 ✅ (this file)
-```
-
----
-
-## 🚀 Quick Start (Today)
-
-### 1. Install dependencies:
+### 1. Install Dependencies
 ```bash
-cd /Users/jedmurdock/cursor/nickleminer
+# Root
 npm install
+
+# Backend
 cd backend && npm install
+
+# Frontend
 cd ../frontend && npm install
 ```
 
-### 2. Start infrastructure:
+### 2. Start Infrastructure
 ```bash
+# Launch Rancher Desktop (dockerd runtime), then:
 docker compose up -d
 ```
 
-### 3. Set up database:
+### 3. Configure Backend
 ```bash
 cd backend
-echo 'DATABASE_URL="postgresql://nickleminer:nickleminer_dev_password@localhost:5432/nickleminer"
+cat > .env << 'EOF'
+DATABASE_URL="postgresql://nickleminer:nickleminer_dev_password@localhost:5432/nickleminer"
+REDIS_HOST="localhost"
+REDIS_PORT=6379
+STORAGE_PATH="../storage"
+FFMPEG_PATH="/usr/local/bin/ffmpeg"
 PORT=3001
 CORS_ORIGIN="http://localhost:3000"
-STORAGE_PATH="../storage"
-FFMPEG_PATH="/usr/local/bin/ffmpeg"' > .env
+EOF
 
 npm run prisma:generate
 npm run prisma:migrate
 ```
 
-### 4. Start backend:
+### 4. Start Services
 ```bash
-npm run start:dev
+# Backend (terminal 1)
+cd backend && npm run start:dev
+
+# Frontend (terminal 2)
+cd frontend && npm run dev
 ```
 
-### 5. Test scraper:
-```bash
-# Scrape 2020 shows
-curl -X POST http://localhost:3001/scraper/scrape-year \
-  -H "Content-Type: application/json" \
-  -d '{"year": 2020}'
+### 5. Access the Application
+- **Frontend:** http://localhost:3000
+- **Admin Dashboard:** http://localhost:3000/admin
+- **Backend API:** http://localhost:3001
+- **Prisma Studio:** `cd backend && npm run prisma:studio` → http://localhost:5555
 
-# View results
-curl http://localhost:3001/scraper/shows | jq
+---
+
+## 📝 Example API Usage
+
+### Scrape Shows
+```bash
+POST http://localhost:3001/scraper/scrape-year
+Content-Type: application/json
+
+{
+  "year": 2020
+}
+```
+
+### List Shows (with pagination)
+```bash
+GET http://localhost:3001/scraper/shows?page=1&limit=20
+```
+
+### Process Audio for a Show
+```bash
+POST http://localhost:3001/scraper/shows/:id/process
+```
+
+### Stream Audio
+```bash
+GET http://localhost:3001/shows/:id/stream
+# Or use in browser: <audio src="http://localhost:3001/shows/:id/stream" />
 ```
 
 ---
 
-## 🎓 Learning Outcomes (So Far)
+## 🛠️ Development Workflow
 
-### Concepts Learned:
-- ✅ Nest.js modular architecture
-- ✅ Prisma ORM schema design
-- ✅ Web scraping with Cheerio
-- ✅ HTML parsing strategies
-- ✅ Rate limiting and respectful scraping
-- ✅ TypeScript decorators (Nest.js)
-- ✅ Dependency injection pattern
-- ✅ Rancher Desktop + Docker Compose setup
-- ✅ PostgreSQL database design
-- ✅ REST API design
-- ✅ Monorepo structure
-- ✅ Next.js App Router basics
-- ✅ TailwindCSS setup
+### Daily Workflow
+```bash
+# Start infrastructure (if not running)
+docker compose up -d
 
-### Next to Learn:
-- ⏳ FFmpeg audio processing
-- ⏳ Background job queues (BullMQ)
-- ⏳ Audio streaming with range requests
-- ⏳ React audio components
-- ⏳ File upload/download handling
+# Start backend
+cd backend && npm run start:dev
 
----
+# Start frontend (separate terminal)
+cd frontend && npm run dev
 
-## 🐛 Known Issues
+# View database
+cd backend && npm run prisma:studio
+```
 
-### None Yet! 🎉
+### When Pulling Updates
+```bash
+# Install new dependencies
+npm install
+cd backend && npm install
+cd frontend && npm install
 
-The foundation is solid and ready for the next phases.
+# Update database schema
+cd backend
+npm run prisma:generate
+npm run prisma:migrate
+```
 
 ---
 
-## 📝 Notes
+## 📁 Key Files
 
-### Important Decisions Made:
-1. **Audio Format Priority**: MP3 > OGG > AAC > RealAudio
-   - Rationale: Higher quality first, fall back to RealAudio only if needed
-   
-2. **Storage Format**: OGG Vorbis
-   - Rationale: Better quality/size ratio than MP3, open source, good browser support
-   
-3. **Scope**: 2020 shows only (~50 shows)
-   - Rationale: Manageable size for MVP, can expand later
-   - Storage: ~10-15GB
-   
-4. **Deferred Features**: Track splitting, genre tagging, playlists
-   - Rationale: Focus on core functionality first, add complexity later
+**Backend:**
+- `backend/src/main.ts` - Application entry point
+- `backend/src/app.module.ts` - Main module
+- `backend/src/scraper/` - Scraping service and controller
+- `backend/src/audio/` - Audio download and conversion services
+- `backend/src/shows/` - Streaming controller
+- `backend/prisma/schema.prisma` - Database schema
 
-### Performance Considerations:
-- Scraper adds 2-second delay between requests (respectful to WFMU servers)
-- Database indexes on frequently queried fields
-- Duplicate detection prevents re-scraping
+**Frontend:**
+- `frontend/app/page.tsx` - Home page
+- `frontend/app/admin/page.tsx` - Admin dashboard
+- `frontend/app/layout.tsx` - Root layout
+- `frontend/lib/api.ts` - API client
 
-### Future Optimizations:
-- Add caching for frequently accessed shows
-- Implement retry logic for failed scrapes
-- Add progress tracking for long-running scrapes
-- Batch process audio conversions
+**Infrastructure:**
+- `docker-compose.yml` - Container orchestration
+- `storage/raw/` - Downloaded audio files
+- `storage/converted/` - Converted OGG files
 
 ---
 
-## 🎯 Success Criteria for MVP
+## 🎯 MVP Scope
 
-MVP will be considered complete when:
-- [x] Can scrape 2020 shows from WFMU
-- [x] Shows stored in database with metadata
-- [x] Track listings extracted and stored
-- [ ] Can download audio files
-- [ ] Can convert to OGG Vorbis
-- [ ] Audio files stored locally
-- [ ] Can stream audio in browser
-- [ ] Frontend displays shows and tracks
-- [ ] Can play full show audio
-- [ ] System is stable and documented
+**Goal:** Archive 2020 WFMU shows for personal use and learning
 
-**Current:** 3/10 complete (30%)
+### ✅ Completed:
+- [x] Scrape ~50 shows from 2020
+- [x] Prefer higher quality audio formats (OGG > AAC > MP3 > RA)
+- [x] Download and convert to OGG Vorbis
+- [x] Store full shows (no track splitting yet)
+- [x] Store track metadata from HTML
+- [x] Admin UI to browse and process shows
+- [x] Stream audio in browser
 
----
+### ⏳ In Progress:
+- [ ] User-facing shows/tracks browsing pages
+- [ ] Embedded audio player
 
-## 🔮 Immediate Next Steps
-
-1. **Create audio processing module** (1-2 hours)
-   - Download service
-   - FFmpeg wrapper
-   - Conversion to OGG
-
-2. **Add streaming endpoint** (1 hour)
-   - Serve audio files
-   - Range request support
-
-3. **Build basic frontend** (2-3 hours)
-   - Shows list
-   - Show detail with player
-   - Admin panel
-
-**Estimated time to working MVP:** 4-6 hours of focused development
+### ❌ Deferred:
+- [ ] Track splitting into individual files
+- [ ] Genre tagging
+- [ ] Advanced search
+- [ ] Custom playlists
 
 ---
 
-**Ready to continue? The foundation is solid! 🚀**
+## 📞 Quick Reference
 
-Next task: Implement audio download and conversion services.
+### Ports
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
+- Prisma Studio: http://localhost:5555
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
+- MinIO Console: http://localhost:9001
 
+### Common Commands
+```bash
+# Start everything
+docker compose up -d
+cd backend && npm run start:dev
+cd frontend && npm run dev
+
+# View database
+cd backend && npm run prisma:studio
+
+# Stop everything
+docker compose down
+```
+
+---
+
+## 🎉 Current State
+
+The MVP core is **complete and functional**. You can:
+- ✅ Scrape shows from WFMU
+- ✅ Download and convert audio
+- ✅ Stream audio files
+- ✅ Manage everything via admin UI
+
+**Next focus:** Build user-facing browsing and playback experience! 🎵

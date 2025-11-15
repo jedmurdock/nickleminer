@@ -401,8 +401,7 @@ GROUP BY audio_format;
 
 ## 📚 Documentation Files
 
-- **[CURRENT_STATE.md](./CURRENT_STATE.md)** - ⭐ Start here! Complete current state guide
-- **[STATUS.md](./STATUS.md)** - Detailed progress tracker
+- **[STATUS.md](./STATUS.md)** - ⭐ Start here! Complete current state and progress tracker
 - **[MVP_PLAN.md](./MVP_PLAN.md)** - Simplified MVP scope
 - **[SETUP_INSTRUCTIONS.md](./SETUP_INSTRUCTIONS.md)** - Step-by-step setup
 - **[PROJECT_PLAN.md](./PROJECT_PLAN.md)** - Full system plan (future)
@@ -420,7 +419,7 @@ GROUP BY audio_format;
 5. **Respect WFMU** - 2 second delay is intentional, don't reduce it
 6. **Check audio URLs** - Not all shows have downloadable archives
 7. **Backup database** - Before major changes
-8. **Read CURRENT_STATE.md** - Most up-to-date information
+8. **Read STATUS.md** - Most up-to-date information
 
 ---
 

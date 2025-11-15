@@ -33,7 +33,9 @@
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
     "bullmq": "^5.38.2",
-    "ioredis": "^5.4.2"
+    "ioredis": "^5.4.2",
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
