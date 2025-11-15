@@ -10,13 +10,13 @@ exports.ScraperModule = void 0;
 const common_1 = require("@nestjs/common");
 const scraper_service_1 = require("./scraper.service");
 const scraper_controller_1 = require("./scraper.controller");
-const audio_module_1 = require("../audio/audio.module");
+const queue_module_1 = require("../queue/queue.module");
 let ScraperModule = class ScraperModule {
 };
 exports.ScraperModule = ScraperModule;
 exports.ScraperModule = ScraperModule = __decorate([
     (0, common_1.Module)({
-        imports: [audio_module_1.AudioModule],
+        imports: [(0, common_1.forwardRef)(() => queue_module_1.QueueModule)],
         controllers: [scraper_controller_1.ScraperController],
         providers: [scraper_service_1.ScraperService],
         exports: [scraper_service_1.ScraperService],

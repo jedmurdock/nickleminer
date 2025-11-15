@@ -480,10 +480,12 @@ export class ScraperService {
   }
 
   /**
-   * Get all shows from database
+   * Get all shows from database with pagination
    */
-  async getAllShows() {
+  async getAllShows(skip?: number, take?: number) {
     return this.prisma.show.findMany({
+      skip,
+      take,
       include: {
         _count: {
           select: { tracks: true },
@@ -491,6 +493,13 @@ export class ScraperService {
       },
       orderBy: { date: 'desc' },
     });
+  }
+
+  /**
+   * Get total count of shows
+   */
+  async getShowsCount(): Promise<number> {
+    return this.prisma.show.count();
   }
 
   /**
@@ -503,6 +512,26 @@ export class ScraperService {
         tracks: {
           orderBy: { position: 'asc' },
         },
+      },
+    });
+  }
+
+  async getShowsNeedingProcessing() {
+    return this.prisma.show.findMany({
+      where: {
+        OR: [
+          { processed: false },
+          { audioPath: null },
+        ],
+      },
+      orderBy: { date: 'asc' },
+      select: {
+        id: true,
+        date: true,
+        title: true,
+        processed: true,
+        audioPath: true,
+        audioFormat: true,
       },
     });
   }

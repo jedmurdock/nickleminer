@@ -372,8 +372,10 @@ let ScraperService = ScraperService_1 = class ScraperService {
     delay(ms) {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
-    async getAllShows() {
+    async getAllShows(skip, take) {
         return this.prisma.show.findMany({
+            skip,
+            take,
             include: {
                 _count: {
                     select: { tracks: true },
@@ -382,6 +384,9 @@ let ScraperService = ScraperService_1 = class ScraperService {
             orderBy: { date: 'desc' },
         });
     }
+    async getShowsCount() {
+        return this.prisma.show.count();
+    }
     async getShow(id) {
         return this.prisma.show.findUnique({
             where: { id },
@@ -389,6 +394,25 @@ let ScraperService = ScraperService_1 = class ScraperService {
                 tracks: {
                     orderBy: { position: 'asc' },
                 },
+            },
+        });
+    }
+    async getShowsNeedingProcessing() {
+        return this.prisma.show.findMany({
+            where: {
+                OR: [
+                    { processed: false },
+                    { audioPath: null },
+                ],
+            },
+            orderBy: { date: 'asc' },
+            select: {
+                id: true,
+                date: true,
+                title: true,
+                processed: true,
+                audioPath: true,
+                audioFormat: true,
             },
         });
     }

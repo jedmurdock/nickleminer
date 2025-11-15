@@ -1,56 +1,34 @@
 import { ScraperService } from './scraper.service';
 import { AudioService } from '../audio/audio.service';
+import { ScrapeYearDto } from './dto/scrape-year.dto';
+import { PaginationDto, PaginatedResponse } from '../common/dto/pagination.dto';
 export declare class ScraperController {
     private readonly scraperService;
     private readonly audioService;
     constructor(scraperService: ScraperService, audioService: AudioService);
-    scrapeYear(year: number): Promise<{
+    scrapeYear(dto: ScrapeYearDto): Promise<{
         message: string;
         year: number;
     }>;
-    getAllShows(): Promise<{
-        count: number;
-        shows: ({
-            _count: {
-                tracks: number;
-            };
-        } & {
-            id: string;
-            playlistUrl: string;
-            date: Date;
-            title: string | null;
-            archiveUrl: string | null;
-            audioFormat: string | null;
-            audioPath: string | null;
-            rawAudioPath: string | null;
-            rawAudioFormat: string | null;
-            downloadedAt: Date | null;
-            convertedAt: Date | null;
-            processingState: string | null;
-            duration: number | null;
-            processed: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        })[];
-    }>;
+    getAllShows(pagination: PaginationDto): Promise<PaginatedResponse<any>>;
     getShow(id: string): Promise<({
         tracks: {
             id: string;
             title: string;
             createdAt: Date;
             position: number;
+            showId: string;
             artist: string;
             album: string | null;
             label: string | null;
             year: number | null;
             comments: string | null;
-            showId: string;
         }[];
     } & {
         id: string;
-        playlistUrl: string;
         date: Date;
         title: string | null;
+        playlistUrl: string;
         archiveUrl: string | null;
         audioFormat: string | null;
         audioPath: string | null;

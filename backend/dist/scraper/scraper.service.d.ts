@@ -25,15 +25,15 @@ export declare class ScraperService {
     private extractTitle;
     private parseYear;
     private delay;
-    getAllShows(): Promise<({
+    getAllShows(skip?: number, take?: number): Promise<({
         _count: {
             tracks: number;
         };
     } & {
         id: string;
-        playlistUrl: string;
         date: Date;
         title: string | null;
+        playlistUrl: string;
         archiveUrl: string | null;
         audioFormat: string | null;
         audioPath: string | null;
@@ -47,24 +47,25 @@ export declare class ScraperService {
         createdAt: Date;
         updatedAt: Date;
     })[]>;
+    getShowsCount(): Promise<number>;
     getShow(id: string): Promise<({
         tracks: {
             id: string;
             title: string;
             createdAt: Date;
             position: number;
+            showId: string;
             artist: string;
             album: string | null;
             label: string | null;
             year: number | null;
             comments: string | null;
-            showId: string;
         }[];
     } & {
         id: string;
-        playlistUrl: string;
         date: Date;
         title: string | null;
+        playlistUrl: string;
         archiveUrl: string | null;
         audioFormat: string | null;
         audioPath: string | null;
@@ -78,5 +79,13 @@ export declare class ScraperService {
         createdAt: Date;
         updatedAt: Date;
     }) | null>;
+    getShowsNeedingProcessing(): Promise<{
+        id: string;
+        date: Date;
+        title: string | null;
+        audioFormat: string | null;
+        audioPath: string | null;
+        processed: boolean;
+    }[]>;
 }
 export {};

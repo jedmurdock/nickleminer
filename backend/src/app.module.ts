@@ -6,6 +6,7 @@ import { PrismaModule } from './database/prisma.module';
 import { ScraperModule } from './scraper/scraper.module';
 import { AudioModule } from './audio/audio.module';
 import { ShowsModule } from './shows/shows.module';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ShowsModule } from './shows/shows.module';
     AudioModule,
     ScraperModule,
     ShowsModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

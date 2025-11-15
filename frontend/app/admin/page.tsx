@@ -23,6 +23,17 @@ type ShowsResponse = {
   >;
 };
 
+type QueueStatus = {
+  name: string;
+  counts: Record<string, number>;
+  isPaused: boolean;
+};
+
+type QueueResponse = {
+  scrape: QueueStatus;
+  process: QueueStatus;
+};
+
 const apiBase = getApiBase();
 
 export default function AdminPage() {
@@ -36,6 +47,12 @@ export default function AdminPage() {
 
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [processStatus, setProcessStatus] = useState<Record<string, string>>({});
+
+  const [queueStatus, setQueueStatus] = useState<QueueResponse | null>(null);
+  const [isLoadingQueues, setIsLoadingQueues] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const [bulkStatus, setBulkStatus] = useState<string | null>(null);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   const formattedYear = useMemo(() => year.toString(), [year]);
 
@@ -60,6 +77,27 @@ export default function AdminPage() {
     void fetchShows();
   }, [fetchShows]);
 
+  const fetchQueueStatus = useCallback(async () => {
+    setIsLoadingQueues(true);
+    setQueueError(null);
+    try {
+      const res = await fetch(`${apiBase}/queue/status`, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch queue status (${res.status})`);
+      }
+      const payload = (await res.json()) as QueueResponse;
+      setQueueStatus(payload);
+    } catch (error) {
+      setQueueError((error as Error).message);
+    } finally {
+      setIsLoadingQueues(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchQueueStatus();
+  }, [fetchQueueStatus]);
+
   const handleScrapeYear = useCallback(async () => {
     setIsScraping(true);
     setScrapeStatus(null);
@@ -72,11 +110,14 @@ export default function AdminPage() {
         body: JSON.stringify({ year }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: 'Failed to scrape year.' }));
+        const err = await res.json().catch(() => ({ message: 'Failed to enqueue scrape job.' }));
         throw new Error(err.message || `Failed with status ${res.status}`);
       }
-      const payload = await res.json();
-      setScrapeStatus(payload.message ?? `Scrape started for ${formattedYear}.`);
+      const payload: { message?: string; jobId?: string | number; year?: number } = await res.json();
+      const statusMessage = payload.jobId
+        ? `Queued scrape job ${payload.jobId} for ${payload.year ?? formattedYear}.`
+        : payload.message ?? `Scrape job queued for ${formattedYear}.`;
+      setScrapeStatus(statusMessage);
       await fetchShows();
     } catch (error) {
       setScrapeStatus((error as Error).message);
@@ -88,18 +129,22 @@ export default function AdminPage() {
   const handleProcessShow = useCallback(
     async (showId: string) => {
       setProcessingIds((prev) => new Set(prev).add(showId));
-      setProcessStatus((prev) => ({ ...prev, [showId]: 'Processing…' }));
+      setProcessStatus((prev) => ({ ...prev, [showId]: 'Enqueuing…' }));
       try {
         const res = await fetch(`${apiBase}/scraper/shows/${showId}/process`, {
           method: 'POST',
         });
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ message: 'Failed to process show.' }));
+          const err = await res.json().catch(() => ({ message: 'Failed to enqueue processing job.' }));
           throw new Error(err.message || `Request failed with status ${res.status}`);
         }
-        const payload = await res.json();
-        setProcessStatus((prev) => ({ ...prev, [showId]: payload.message ?? 'Processing complete.' }));
+        const payload: { message?: string; jobId?: string | number } = await res.json();
+        const statusMessage = payload.jobId
+          ? `Queued processing job ${payload.jobId}.`
+          : payload.message ?? 'Processing job queued.';
+        setProcessStatus((prev) => ({ ...prev, [showId]: statusMessage }));
         await fetchShows();
+        await fetchQueueStatus();
       } catch (error) {
         setProcessStatus((prev) => ({ ...prev, [showId]: (error as Error).message }));
       } finally {
@@ -110,8 +155,29 @@ export default function AdminPage() {
         });
       }
     },
-    [fetchShows],
+    [fetchShows, fetchQueueStatus],
   );
+
+  const handleProcessAll = useCallback(async () => {
+    setIsBulkProcessing(true);
+    setBulkStatus(null);
+    try {
+      const res = await fetch(`${apiBase}/scraper/process-all`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Failed to enqueue bulk processing job.' }));
+        throw new Error(err.message || `Request failed with status ${res.status}`);
+      }
+      const payload: { message?: string; count?: number } = await res.json();
+      setBulkStatus(payload.message ?? `Queued ${payload.count ?? 0} processing jobs.`);
+      await Promise.all([fetchShows(), fetchQueueStatus()]);
+    } catch (error) {
+      setBulkStatus((error as Error).message);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  }, [fetchShows, fetchQueueStatus]);
 
   return (
     <div className="min-h-screen p-8 pb-24 sm:p-12">
@@ -125,19 +191,42 @@ export default function AdminPage() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold">Scrape Shows</h2>
-          <div className="flex flex-col sm:flex-row items-start gap-4">
-            <label className="flex items-center gap-2 text-lg">
-              <span>Year:</span>
-              <input
-                type="number"
-                min={1997}
-                max={new Date().getFullYear()}
-                value={year}
-                onChange={(event) => setYear(Number(event.target.value))}
-                className="rounded border border-gray-300 px-3 py-2 w-32"
-              />
-            </label>
+          <h2 className="text-2xl font-semibold">Queue Status</h2>
+          {queueError && <p className="text-sm text-red-600">{queueError}</p>}
+          {bulkStatus && <p className="text-sm text-gray-600 dark:text-gray-300">{bulkStatus}</p>}
+          <div className="grid gap-4 md:grid-cols-2">
+            {['scrape', 'process'].map((key) => {
+              const entry = queueStatus?.[key as keyof QueueResponse];
+              return (
+                <div key={key} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold capitalize">{key} queue</h3>
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded ${
+                        entry?.isPaused ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                      }`}
+                    >
+                      {entry?.isPaused ? 'Paused' : 'Running'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 break-all">{entry?.name ?? '—'}</p>
+                  <dl className="grid grid-cols-2 gap-2 mt-4 text-sm">
+                    {entry
+                      ? Object.entries(entry.counts).map(([status, value]) => (
+                          <div key={status} className="flex items-center justify-between">
+                            <dt className="text-gray-500 capitalize">{status}</dt>
+                            <dd className="font-mono">{value}</dd>
+                          </div>
+                        ))
+                      : (
+                          <p className="col-span-2 text-gray-500">No data</p>
+                        )}
+                  </dl>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => void handleScrapeYear()}
               disabled={isScraping}
@@ -145,22 +234,46 @@ export default function AdminPage() {
             >
               {isScraping ? 'Scraping…' : `Scrape ${formattedYear}`}
             </button>
+            <button
+              onClick={() => void handleProcessAll()}
+              disabled={isBulkProcessing}
+              className="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isBulkProcessing ? 'Queuing…' : 'Process all pending shows'}
+            </button>
           </div>
-          {scrapeStatus && (
-            <p className="text-sm text-gray-700 dark:text-gray-300">{scrapeStatus}</p>
-          )}
         </section>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">Shows</h2>
-            <button
-              onClick={() => void fetchShows()}
-              className="rounded border border-gray-400 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-              disabled={isLoadingShows}
-            >
-              {isLoadingShows ? 'Refreshing…' : 'Refresh'}
-            </button>
+            <div className="flex gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <span>Year:</span>
+                <input
+                  type="number"
+                  min={1997}
+                  max={new Date().getFullYear()}
+                  value={year}
+                  onChange={(event) => setYear(Number(event.target.value))}
+                  className="rounded border border-gray-300 px-2 py-1 w-28"
+                />
+              </label>
+              <button
+                onClick={() => void fetchQueueStatus()}
+                className="rounded border border-gray-400 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                disabled={isLoadingQueues}
+              >
+                {isLoadingQueues ? 'Refreshing queues…' : 'Refresh queues'}
+              </button>
+              <button
+                onClick={() => void fetchShows()}
+                className="rounded border border-gray-400 px-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                disabled={isLoadingShows}
+              >
+                {isLoadingShows ? 'Refreshing shows…' : 'Refresh shows'}
+              </button>
+            </div>
           </div>
           {showError && <p className="text-sm text-red-600">{showError}</p>}
 

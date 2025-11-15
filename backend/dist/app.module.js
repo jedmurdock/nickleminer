@@ -15,6 +15,7 @@ const prisma_module_1 = require("./database/prisma.module");
 const scraper_module_1 = require("./scraper/scraper.module");
 const audio_module_1 = require("./audio/audio.module");
 const shows_module_1 = require("./shows/shows.module");
+const queue_module_1 = require("./queue/queue.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -28,6 +29,7 @@ exports.AppModule = AppModule = __decorate([
             audio_module_1.AudioModule,
             scraper_module_1.ScraperModule,
             shows_module_1.ShowsModule,
+            queue_module_1.QueueModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

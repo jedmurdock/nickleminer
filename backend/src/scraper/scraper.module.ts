@@ -1,10 +1,10 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ScraperService } from './scraper.service';
 import { ScraperController } from './scraper.controller';
-import { AudioModule } from '../audio/audio.module';
+import { QueueModule } from '../queue/queue.module';
 
 @Module({
-  imports: [AudioModule],
+  imports: [forwardRef(() => QueueModule)],
   controllers: [ScraperController],
   providers: [ScraperService],
   exports: [ScraperService],

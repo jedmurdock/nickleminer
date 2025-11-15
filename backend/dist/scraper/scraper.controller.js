@@ -16,6 +16,8 @@ exports.ScraperController = void 0;
 const common_1 = require("@nestjs/common");
 const scraper_service_1 = require("./scraper.service");
 const audio_service_1 = require("../audio/audio.service");
+const scrape_year_dto_1 = require("./dto/scrape-year.dto");
+const pagination_dto_1 = require("../common/dto/pagination.dto");
 let ScraperController = class ScraperController {
     scraperService;
     audioService;
@@ -23,19 +25,29 @@ let ScraperController = class ScraperController {
         this.scraperService = scraperService;
         this.audioService = audioService;
     }
-    async scrapeYear(year) {
-        const targetYear = year || 2020;
-        await this.scraperService.scrapeYear(targetYear);
+    async scrapeYear(dto) {
+        await this.scraperService.scrapeYear(dto.year);
         return {
-            message: `Started scraping year ${targetYear}`,
-            year: targetYear,
+            message: `Started scraping year ${dto.year}`,
+            year: dto.year,
         };
     }
-    async getAllShows() {
-        const shows = await this.scraperService.getAllShows();
+    async getAllShows(pagination) {
+        const page = pagination.page || 1;
+        const limit = pagination.limit || 20;
+        const skip = (page - 1) * limit;
+        const [shows, total] = await Promise.all([
+            this.scraperService.getAllShows(skip, limit),
+            this.scraperService.getShowsCount(),
+        ]);
         return {
-            count: shows.length,
-            shows,
+            data: shows,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
         };
     }
     async getShow(id) {
@@ -52,15 +64,16 @@ let ScraperController = class ScraperController {
 exports.ScraperController = ScraperController;
 __decorate([
     (0, common_1.Post)('scrape-year'),
-    __param(0, (0, common_1.Body)('year')),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", [scrape_year_dto_1.ScrapeYearDto]),
     __metadata("design:returntype", Promise)
 ], ScraperController.prototype, "scrapeYear", null);
 __decorate([
     (0, common_1.Get)('shows'),
+    __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [pagination_dto_1.PaginationDto]),
     __metadata("design:returntype", Promise)
 ], ScraperController.prototype, "getAllShows", null);
 __decorate([
